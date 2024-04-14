@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "seqprocessor"
+version = "0.1.0"
+description = ""
+authors = ["Ruichen Wang <wangruichen100@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.scripts]
+seqprocessor = "seqprocessor.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+typer = {extras = ["all"], version = "^0.12.3"}
+pandas = "^2.2.2"
+xlrd = "^2.0.1"
+biopython = "^1.83"
+openpyxl = "^3.1.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
