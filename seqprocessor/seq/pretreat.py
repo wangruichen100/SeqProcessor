@@ -8,6 +8,23 @@ from seqprocessor.utils import fasta_read
 
 pretreat_app = typer.Typer(help="Sequence pretreatment")
 
+class DeleteDuplicateFormat(str, Enum):
+    f1 = "rename" #"Delete characters outside of ATCG."
+    f2 = "delete" #"Replace characters outside of ATCG with N."
+
+@pretreat_app.command(name="fasta_standardize", 
+                  help="Process characters outside of ATCG in the FASTA file sequences")
+def fasta_standardize(
+    file_path: str = typer.Option(..., "--input", "-i", help="A FASTA file"),
+    out_path: str = typer.Option(..., "--out", "-o", help="Output file path"),
+    standardize_format: ProcessFormat = typer.Option(ProcessFormat.f1, "--format", "-f",  help="Standardize format"),
+):
+    sequences = fasta_read(file_path)
+    records = []
+
+
+
+
 class ProcessFormat(str, Enum):
     f1 = "f1" #"Delete characters outside of ATCG."
     f2 = "f2" #"Replace characters outside of ATCG with N."
