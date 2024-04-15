@@ -119,18 +119,32 @@ def seq_standardize(
 
 # Changing the case of sequences.
 class CaseFormat(str, Enum):
-    f1 = "upper" #"Convert to uppercase."
-    f2 = "lower" #"Convert to lowercase."
+    f1 = "upper"  # "Convert to uppercase."
+    f2 = "lower"  # "Convert to lowercase."
 
 @pretreat_app.command(name="seq_case", 
-                  help="Convert to uppercase or lowercase.")
+                      help="Convert sequences to uppercase or lowercase.")
 def seq_case(
-    file_path: str = typer.Option(..., "--input", "-i", help="A FASTA file"),
-    out_path: str = typer.Option(..., "--out", "-o", help="Output file path"),
+    file_path: str = typer.Option(..., "--input", "-i", help="Path to the input FASTA file."),
+    out_path: str = typer.Option(..., "--out", "-o", help="Path to the output file."),
     case_format: CaseFormat = typer.Option(CaseFormat.f1, "--format", "-f",  help="Uppercase or lowercase"),
 ):
+    """
+    Convert sequences to uppercase or lowercase.
+
+    Args:
+        file_path (str): Path to the input FASTA file.
+        out_path (str): Path to the output file.
+        case_format (CaseFormat): Format for case conversion.
+
+    Returns:
+        None
+    """
+    # Read sequences from the input FASTA file
     sequences = fasta_read(file_path)
     records = []
+
+    # Process each sequence
     for name, seq in sequences.items():
         if case_format == CaseFormat.f1:
             # Convert to uppercase
@@ -139,8 +153,10 @@ def seq_case(
             # Convert to lowercase
             seq = seq.lower()
 
+        # Append the processed sequence to the records list
         records.append({"Name": name, "Sequence": seq})
 
+    # Write the processed sequences to the output file
     with open(out_path, 'w') as outfile:
         for record in records:
             outfile.write(f'>{record["Name"]}\n{record["Sequence"]}\n')
