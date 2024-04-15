@@ -21,3 +21,24 @@ def fasta_read(file_path):
 
     return sequences
 
+def fasta_read2(file_path):
+    names = []
+    sequences = []
+    current_name = None
+    current_sequence = ""
+    with open(file_path, "r") as file:
+        for line in file:
+            line = line.strip()
+            if line.startswith(">"):
+                if current_name:
+                    names.append(current_name)
+                    sequences.append(current_sequence)
+                current_name = line[1:]
+                current_sequence = ""
+            else:
+                current_sequence += line
+        if current_name:
+            names.append(current_name)
+            sequences.append(current_sequence)
+    return names, sequences
+
