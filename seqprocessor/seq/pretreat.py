@@ -165,12 +165,24 @@ def seq_case(
 # Changing the name of sequences.
 @pretreat_app.command(name="name_change", 
                       help="Replace sequence names according to the corresponding table.")
-def seq_case(
+def name_change(
     file_path: str = typer.Option(..., "--input", "-i", help="Path to the input FASTA file."),
     info_path: str = typer.Option(..., "--info", help="Path to the input Info file."),
     out_path: str = typer.Option(..., "--out", "-o", help="Path to the output file."),
     info_format: OutputFormat = typer.Option(OutputFormat.csv, "--format", "-f",  help="Info file format"),
 ):
+    """
+    Replace sequence names according to the corresponding table.
+
+    Args:
+        file_path (str): Path to the input FASTA file.
+        info_path (str): Path to input Info file.
+        out_path (str): Path to the output file.
+        info_format (info_format): Format for Info file format.
+
+    Returns:
+        None
+    """
     names, sequences = fasta_read2(file_path)
     
     if info_format == OutputFormat.csv:
