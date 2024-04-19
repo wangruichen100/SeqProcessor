@@ -25,8 +25,8 @@ def process_genebank_record(record):
     }
     return qualifiers
 
-@info_app.command(name="genebank_profile", help="Get information from GenBank")
-def genebank_profile(
+@info_app.command(name="genbank_profile", help="Get information from GenBank")
+def genbank_profile(
     file_path: str = typer.Option(..., "--input", "-i", help="A GenBank file"),
     out_path: str = typer.Option(..., "--out", "-o", help="Output file path"),
     out_format: OutputFormat = typer.Option(OutputFormat.csv, "--format", "-f", help="Output file format"),
