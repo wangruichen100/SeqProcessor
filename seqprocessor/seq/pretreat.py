@@ -1,10 +1,11 @@
 import typer
+import pandas as pd
 
 from Bio import SeqIO
 from enum import Enum
 
 from seqprocessor.utils import fasta_read, fasta_read2
-
+from seqprocessor.options import OutputFormat
 
 
 pretreat_app = typer.Typer(help="Sequence pretreatment")
@@ -160,3 +161,32 @@ def seq_case(
     with open(out_path, 'w') as outfile:
         for record in records:
             outfile.write(f'>{record["Name"]}\n{record["Sequence"]}\n')
+
+# Changing the name of sequences.
+@pretreat_app.command(name="name_change", 
+                      help="Replace sequence names according to the corresponding table.")
+def seq_case(
+    file_path: str = typer.Option(..., "--input", "-i", help="Path to the input FASTA file."),
+    info_path: str = typer.Option(..., "--info", help="Path to the input Info file."),
+    out_path: str = typer.Option(..., "--out", "-o", help="Path to the output file."),
+    info_format: OutputFormat = typer.Option(OutputFormat.csv, "--format", "-f",  help="Info file format"),
+):
+    names, sequences = fasta_read2(file_path)
+    
+    if info_format == OutputFormat.csv:
+        df_info = pd.read_csv(info_path)
+    elif info_format == OutputFormat.table:
+        df_info = pd.read_csv(info_path, sep="\t")
+    elif info_format == OutputFormat.excel:
+        df_info = pd.read_excel(info_path)
+    
+    old_name = df_info.iloc[:, 0].to_list()
+    new_name = df_info.iloc[:, 1].to_list()
+    name_dict = dict(zip(old_name,new_name))
+
+    with open(out_path, 'w') as outfile:
+        for name, sequence in zip(names, sequences):
+            name_ = name_dict[name]
+            outfile.write(f'>{name_}\n{sequence}\n')
+
+            
