@@ -3,6 +3,7 @@ import pandas as pd
 
 from Bio import SeqIO
 from enum import Enum
+from collections import Counter
 
 from seqprocessor.utils import fasta_read, fasta_read2
 from seqprocessor.options import OutputFormat
@@ -201,4 +202,23 @@ def name_change(
             name_ = name_dict[name]
             outfile.write(f'>{name_}\n{sequence}\n')
 
-            
+# Filtering low-quality sequences.
+@pretreat_app.command(name="quality_control", 
+                      help="Filtering low-quality sequences.")
+def quality_control(
+    file_path: str = typer.Option(..., "--input", "-i", help="Path to the input FASTA file."),
+    out_path: str = typer.Option(..., "--out", "-o", help="Path to the output file."),
+    qc_percentage: float = typer.Option(..., "--qc", "-q", help="Qc percentage, 0.0 to 1.0."),
+):
+
+    names, sequences = fasta_read2(file_path)
+
+    with open(out_path, 'w') as outfile:
+        for name, sequence in zip(names, sequences):
+            sequence = sequence.upper()
+            seq_length = len(sequence)
+            seq_count = Counter(sequence)
+            atcg_count = seq_count["A"]+seq_count["T"]+seq_count["C"]+seq_count["G"]
+            # Checking if percentage of A, T, C, and G bases is greater than or equal to qc_percentage
+            if atcg_count/seq_length >= qc_percentage:
+                outfile.write(f'>{name}\n{sequence}\n')
