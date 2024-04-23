@@ -53,3 +53,6 @@ def align_mafft(
         print("MAFFT run successful. Results saved in", out_path)
     except subprocess.CalledProcessError as e:
         print("Error writing output file:", e)
+
+if __name__ == "__main__":
+    align_app()

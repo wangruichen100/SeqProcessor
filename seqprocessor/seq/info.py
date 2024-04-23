@@ -75,3 +75,6 @@ def fasta_profile(
     except Exception as e:
         typer.echo(f"Error writing output file: {e}")
         raise typer.Abort()
+    
+if __name__ == "__main__":
+    info_app()

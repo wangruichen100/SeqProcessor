@@ -46,3 +46,6 @@ def tree_iqtree(
         print("Tree construction completed.")
     except subprocess.CalledProcessError as e:
         print("Error building tree with IQ-TREE:", e)
+
+if __name__ == "__main__":
+    phylo_app()

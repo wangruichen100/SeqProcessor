@@ -222,3 +222,6 @@ def quality_control(
             # Checking if percentage of A, T, C, and G bases is greater than or equal to qc_percentage
             if atcg_count/seq_length >= qc_percentage:
                 outfile.write(f'>{name}\n{sequence}\n')
+
+if __name__ == "__main__":
+    pretreat_app()
