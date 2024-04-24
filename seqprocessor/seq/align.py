@@ -19,7 +19,7 @@ def is_mafft_installed():
 def install_mafft_with_conda():
     try:
         # Try installing MAFFT 7.525 using the correct Conda installation command
-        subprocess.run(["conda", "install", "bioconda::mafft==7.525", "-y"], check=True)
+        subprocess.run(["conda", "install", "bioconda::mafft", "-y"], check=True)
         return True
     except subprocess.CalledProcessError:
         return False
