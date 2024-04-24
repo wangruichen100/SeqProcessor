@@ -163,8 +163,8 @@ def aatj(input_fasta, group):
     return site, aa, stat_df, freq_df, group_
 
 
-@mutation_app.command(name="group_ntmutation", help="Compare amino acid mutations in different classifications.")
-def group_aamutation(
+@mutation_app.command(name="group_ntmutation", help="Compare nucleotide in different classifications.")
+def group_ntmutation(
     file_path: str = typer.Option(..., "--input", "-i", help="A FASTA file"),
     info_path: str = typer.Option(..., "--info", "-info", help="Information file path"),
     out_path: str = typer.Option(..., "--out", "-o", help="Output file path"),
