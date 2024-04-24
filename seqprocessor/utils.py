@@ -1,6 +1,9 @@
 import typer
 
+import numpy as np
 from Bio.Seq import Seq
+import matplotlib.cm as cm
+from matplotlib.colors import ListedColormap
 
 
 def fasta_read(file_path):
@@ -83,3 +86,24 @@ def translate_sequence(nucleotide_sequence):
         else:
             protein_sequence += "?"
     return protein_sequence
+
+
+def tab21_black():
+    # Get tab20 colormap
+    tab20 = cm.get_cmap('tab20')
+
+    tab20_black = tab20(np.linspace(0, 1, 20))
+    tab20_black = np.vstack(([0, 0, 0, 1],tab20_black))  # [0, 0, 0] represents black color
+    # Create colormap with black color added
+    colormap = ListedColormap(tab20_black)
+    return colormap
+
+def dark2_black():
+    # Get Dark2 colormap
+    dark2 = cm.get_cmap('Dark2')
+
+    dark2_black = dark2(np.linspace(0, 1, 8))
+    dark2_black = np.vstack(([0, 0, 0, 1],dark2_black))  # [0, 0, 0] represents black color
+    # Create colormap with black color added
+    colormap = ListedColormap(dark2_black)
+    return colormap

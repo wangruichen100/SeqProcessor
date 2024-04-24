@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "seqprocessor"
-version = "0.1.2"
+version = "0.1.3"
 description = "A sequence tool"
 authors = ["Ruichen Wang <wangruichen100@gmail.com>"]
 readme = "README.md"

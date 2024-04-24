@@ -5,10 +5,10 @@ from collections import Counter
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import os
-from tqdm import tqdm
 
-from seqprocessor.utils import fasta_read, fasta_read2
+from seqprocessor.utils import fasta_read, fasta_read2, tab21_black
 from seqprocessor.options import OutputFormat
 
 mutation_app = typer.Typer(help="Mutation analysis")
@@ -68,7 +68,6 @@ def find_differences(ref_seq, seq, name):
     return differences
 
 
-
 @mutation_app.command(name="group_aamutation", help="Compare amino acid mutations in different classifications.")
 def group_aamutation(
     file_path: str = typer.Option(..., "--input", "-i", help="A FASTA file"),
@@ -80,52 +79,92 @@ def group_aamutation(
 ):
     seq_record = fasta_read(file_path)
     df = pd.read_excel(info_path)
+    seq_type = sorted(set(df[type_column].to_list()))
+    os.makedirs(f"./{out_path}/{type_column}", exist_ok=True)
 
-    os.makedirs(f"{out_path}/{type_column}", exist_ok=True)
+    for seq_type_ in seq_type:
+        df_type = df[df[type_column]==seq_type_]
+        # print(seq_type_)
+        with open(f"./{out_path}/{type_column}/{seq_type_}.fas", "w") as f:
+            for name_ in df_type[id_column].to_list():          
+                f.write(f">{name_}\n{seq_record[name_]}\n")
 
-    for _, group_df in df.groupby(type_column):
-        group_name = group_df.iloc[0][type_column]
-        group_fasta_path = f"{out_path}/{type_column}/{group_name}.fas"
+    pdf = f"{out_path}/{type_column}/{type_column}.pdf"
+    file_path = f"{out_path}/{type_column}"
+    file_name = seq_type
 
-        with open(group_fasta_path, "w") as f:
-            for seq_id in group_df[id_column]:
-                f.write(f">{seq_id}\n{seq_record[seq_id]}\n")
+    site_all = []
+    aa_all = []
+    stat_df_all = []
+    freq_df_all = []
+    group_all = []
 
-        create_plots_aa(group_fasta_path, group_name, out_path, picture_type)
+    for name_ in file_name:
+        print(name_)
+        site, aa, stat_df, freq_df, group_ = aatj("{0}/{1}.fas".format(file_path, name_), name_)
 
-def create_plots_aa(input_fasta, group_name, out_path, picture_type):
-    pdf_path = f"{out_path}/{group_name}.pdf"
+        site_all += site
+        aa_all += aa
+        stat_df_all += stat_df
+        freq_df_all += freq_df
+        group_all += group_
 
-    if os.path.exists(pdf_path):
-        os.remove(pdf_path)
+    df = pd.DataFrame()
+    df["site"] = site_all
+    df["aa"] = aa_all
+    df["stat"] = stat_df_all
+    df["freq"] = freq_df_all
+    df["group"] = group_all
+    df = df.fillna(0)
+    df.to_csv(f"{out_path}/{type_column}/{type_column}.csv",index = False)
 
-    seq_data = [list(seq.seq) for seq in SeqIO.parse(input_fasta, "fasta")]
-    df = pd.DataFrame(seq_data)
+    with PdfPages(pdf) as pdf:
+        for i_ in range(df["site"].min(), df["site"].max() + 1):
+            print(i_ + 1)
+            df_site = df[df["site"] == i_]
 
-    freq_df = []
-    for col in df.columns:
-        stat = Counter(df[col])
-        freq = [stat.get(aa, 0) / len(df) for aa in 'GAVLIFWYDNKEQMSTCPHR']
-        freq_df.append(freq)
-
-    freq_df = pd.DataFrame(freq_df, columns=list('GAVLIFWYDNKEQMSTCPHR'))
-
-    with PdfPages(pdf_path) as pdf:
-        for i, row in tqdm(freq_df.iterrows(), desc="Plotting"):
+            pivot_df = df_site.pivot(index='group', columns='aa', values='freq')
             if picture_type == "bar":
-                row.plot(kind='bar', stacked=True, colormap='tab20', yticks=[0.5, 1])
+                pivot_df.plot(kind='bar', stacked=True, colormap=tab21_black(), yticks=[0.5, 1])
             elif picture_type == "line":
-                row.plot(kind='line', colormap='tab20', yticks=[0.5, 1])
-
+                pivot_df.plot(kind='line', colormap=tab21_black(), yticks=[0.5, 1])
             plt.ylim((0, 1.1))
-            plt.legend(prop={'size': 8}, bbox_to_anchor=(1.12, 1), loc='upper right', fontsize=5)
-            plt.title(f'Site {i + 1}')
+            plt.legend(prop={'size': 8}, bbox_to_anchor=(1.12, 1),loc='upper right', fontsize=5)
+            plt.title('Site' + str(i_+1))
             plt.xlabel(None)
+            # plt.show()
             pdf.savefig()
             plt.clf()
+            plt.close('all')
 
-@mutation_app.command(name="group_ntmutation", help="Compare nucleotide mutations in different classifications.")
-def group_ntmutation(
+def aatj(input_fasta, group):
+    site = []
+    aa = []
+    stat_df = []
+    freq_df = []
+
+    seq_data = [list(i.seq) for i in SeqIO.parse(input_fasta, "fasta")]
+    df = pd.DataFrame(seq_data)
+
+    for column in df.columns:
+        aa_ = ['G', 'A', 'V', 'L', 'I', 'F', 'W', 'Y', 'D', 'N', 'E', 'K', 'Q', 'M', 'S', 'T', 'C', 'P', 'H', 'R', "-"]
+        aa += aa_
+        site += [column] * len(aa_)
+
+        stat = Counter(df[column])
+        aa_dict = {aa: stat.get(aa, 0) for aa in aa_}
+        stat_df.extend(aa_dict.values())
+
+        freq = np.array(list(aa_dict.values())) / sum(aa_dict.values())
+        freq_df.extend(freq)
+
+    group_ = [group] * len(site)
+
+    return site, aa, stat_df, freq_df, group_
+
+
+@mutation_app.command(name="group_ntmutation", help="Compare amino acid mutations in different classifications.")
+def group_aamutation(
     file_path: str = typer.Option(..., "--input", "-i", help="A FASTA file"),
     info_path: str = typer.Option(..., "--info", "-info", help="Information file path"),
     out_path: str = typer.Option(..., "--out", "-o", help="Output file path"),
@@ -135,49 +174,89 @@ def group_ntmutation(
 ):
     seq_record = fasta_read(file_path)
     df = pd.read_excel(info_path)
+    seq_type = sorted(set(df[type_column].to_list()))
+    os.makedirs(f"./{out_path}/{type_column}", exist_ok=True)
 
-    os.makedirs(f"{out_path}/{type_column}", exist_ok=True)
+    for seq_type_ in seq_type:
+        df_type = df[df[type_column]==seq_type_]
+        # print(seq_type_)
+        with open(f"./{out_path}/{type_column}/{seq_type_}.fas", "w") as f:
+            for name_ in df_type[id_column].to_list():          
+                f.write(f">{name_}\n{seq_record[name_].upper()}\n")
 
-    for _, group_df in df.groupby(type_column):
-        group_name = group_df.iloc[0][type_column]
-        group_fasta_path = f"{out_path}/{type_column}/{group_name}.fas"
+    pdf = f"{out_path}/{type_column}/{type_column}.pdf"
+    file_path = f"{out_path}/{type_column}"
+    file_name = seq_type
 
-        with open(group_fasta_path, "w") as f:
-            for seq_id in group_df[id_column]:
-                f.write(f">{seq_id}\n{seq_record[seq_id]}\n")
+    site_all = []
+    nt_all = []
+    stat_df_all = []
+    freq_df_all = []
+    group_all = []
 
-        create_plots_nt(group_fasta_path, group_name, out_path, picture_type)
+    for name_ in file_name:
+        print(name_)
+        site, nt, stat_df, freq_df, group_ = nttj("{0}/{1}.fas".format(file_path, name_), name_)
 
-def create_plots_nt(input_fasta, group_name, out_path, picture_type):
-    pdf_path = f"{out_path}/{group_name}.pdf"
+        site_all += site
+        nt_all += nt
+        stat_df_all += stat_df
+        freq_df_all += freq_df
+        group_all += group_
 
-    if os.path.exists(pdf_path):
-        os.remove(pdf_path)
+    df = pd.DataFrame()
+    df["site"] = site_all
+    df["nt"] = nt_all
+    df["stat"] = stat_df_all
+    df["freq"] = freq_df_all
+    df["group"] = group_all
+    df = df.fillna(0)
+    df.to_csv(f"{out_path}/{type_column}/{type_column}.csv",index = False)
 
-    seq_data = [list(seq.seq) for seq in SeqIO.parse(input_fasta, "fasta")]
-    df = pd.DataFrame(seq_data)
+    with PdfPages(pdf) as pdf:
+        for i_ in range(df["site"].min(), df["site"].max() + 1):
+            print(i_ + 1)
+            df_site = df[df["site"] == i_]
 
-    freq_df = []
-    for col in df.columns:
-        stat = Counter(df[col])
-        freq = [stat.get(aa, 0) / len(df) for aa in 'ATCG']
-        freq_df.append(freq)
-
-    freq_df = pd.DataFrame(freq_df, columns=list('ATCG'))
-
-    with PdfPages(pdf_path) as pdf:
-        for i, row in tqdm(freq_df.iterrows(), desc="Plotting"):
+            pivot_df = df_site.pivot(index='group', columns='nt', values='freq')
             if picture_type == "bar":
-                row.plot(kind='bar', stacked=True, colormap='Set2', yticks=[0.5, 1])
+                pivot_df.plot(kind='bar', stacked=True, colormap="Set1", yticks=[0.5, 1])
             elif picture_type == "line":
-                row.plot(kind='line', colormap='Set2', yticks=[0.5, 1])
-
+                pivot_df.plot(kind='line', colormap="Set1", yticks=[0.5, 1])
             plt.ylim((0, 1.1))
-            plt.legend(prop={'size': 8}, bbox_to_anchor=(1.12, 1), loc='upper right', fontsize=5)
-            plt.title(f'Site {i + 1}')
+            plt.legend(prop={'size': 8}, bbox_to_anchor=(1.12, 1),loc='upper right', fontsize=5)
+            plt.title('Site' + str(i_+1))
             plt.xlabel(None)
+            # plt.show()
             pdf.savefig()
             plt.clf()
+            plt.close('all')
+
+def nttj(input_fasta, group):
+    site = []
+    nt = []
+    stat_df = []
+    freq_df = []
+
+    seq_data = [list(i.seq) for i in SeqIO.parse(input_fasta, "fasta")]
+    df = pd.DataFrame(seq_data)
+
+    for column in df.columns:
+        nt_ = ['A',"T","C","G","-"]
+        nt += nt_
+        site += [column] * len(nt_)
+
+        stat = Counter(df[column])
+        nt_dict = {nt: stat.get(nt, 0) for nt in nt_}
+        stat_df.extend(nt_dict.values())
+
+        freq = np.array(list(nt_dict.values())) / sum(nt_dict.values())
+        freq_df.extend(freq)
+
+    group_ = [group] * len(site)
+
+    return site, nt, stat_df, freq_df, group_
+
 
 if __name__ == "__main__":
     mutation_app()
